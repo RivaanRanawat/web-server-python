@@ -1,62 +1,6 @@
 import socket
 # import time
 
-def handle_request(request):
-    """Handles the HTTP request."""
-
-    # Remember, I had told you that in HTTP version 1.1, all http requests
-    # have the same structyre. So, I'm going to use this to my benefit
-    # and extract all the headers. New headers are present on new lines
-    # so to extract all headers, I will split by new line and get
-    # all headers in 1 list.
-    headers = request.split('\n') 
-
-    # Now, I'll access the first element of the list to see if it 
-    # was a GET or POST request.
-    first_header_components = headers[0].split() # split by space
-
-    http_method = first_header_components[0] # GET/POST/UPDATE/DELETE
-    path = first_header_components[1] # / or /hello or /products
-
-    if http_method == 'GET':
-        if path == '/':
-            path = 'index.html'
-        elif path == '/book':
-            path = 'book.json'
-        
-        try:
-            fin = open(path, 'r')
-            content = fin.read()
-            fin.close()
-            
-            # HTTP responses, like HTTP requests also have a particular
-            # structure to follow. If something goes missing, it generally
-            # doesn't give us a right output.
-            # The structure of http 1.1 response is like this:
-            # STATUS LINE - <the HTTP version> <STATUS CODE> <OPTIONAL TEXT OF STATUS>
-            # HEADERS (OPTIONAL) - Content-Type: text/html; charset=UTF-8
-            # Content-Length: 12345
-            # MESSAGE BODY (OPTIONAL)
-            response = 'HTTP/1.1 200 OK\n\n' + content
-        except FileNotFoundError:
-            response = 'HTTP/1.1 404 NOT FOUND\n\nFile Not Found'
-    else:
-        # The 405 (Method Not Allowed) status code indicates that 
-        # the method received in the request-line is known by 
-        # the origin server but not supported by the target resource.
-        # For this, the origin server MUST generate an Allow header 
-        # field in a 405 response containing a list of the target
-        # resource's currently supported methods. If you don't put,
-        # it won't really generate any error when we run it (but strict clients or tools that expect full 
-        # compliance with HTTP standards might flag this as an issue or error) but you are
-        # violating the HTTP/1.1 specification (https://www.rfc-editor.org/rfc/rfc7231#section-6.5)
-        
-        content = 'Allow: GET, POST'
-        response = 'HTTP/1.1 405 Method Not Allowed\n\n' + content
-
-    return response
-
-
 # Define the host and port
 SERVER_HOST = '0.0.0.0'
 SERVER_PORT = 8080
@@ -413,7 +357,26 @@ while True: # so that we continuously keep listening to new client connections
     # and this is going to be a piece of cake!
 
     # Returns HTTP response
-    response = handle_request(request)
+    headers = request.split('\n')
+    first_header_components = headers[0].split()
+
+    http_method = first_header_components[0]
+    path = first_header_components[1]
+
+    if http_method == 'GET':
+        if path == '/':
+            fin = open('index.html')
+        elif path == '/book':
+            fin = open('book.json')
+        else:
+            # handle the edge case
+            pass
+        
+        content = fin.read()
+        fin.close()
+        response = 'HTTP/1.1 200 OK\n\n' + content
+    else:
+        response = 'HTTP/1.1 405 Method Not Allowed\n\nAllow: GET'
 
     # You have the response created, you only want to send it back to
     # the client. To do that, there are multiple functions on client_socket
